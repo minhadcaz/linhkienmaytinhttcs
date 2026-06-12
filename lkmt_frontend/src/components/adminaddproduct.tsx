@@ -1,6 +1,23 @@
-import React from 'react';
-import { Drawer, Form, Input, Select, Row, Col, Rate, Upload, Button, Switch, Typography, Space } from 'antd';
-import { CloseOutlined, CloudUploadOutlined, PictureOutlined } from '@ant-design/icons';
+import React from "react";
+import {
+  Drawer,
+  Form,
+  Input,
+  Select,
+  Row,
+  Col,
+  Rate,
+  Upload,
+  Button,
+  Switch,
+  Typography,
+  Space,
+} from "antd";
+import {
+  CloseOutlined,
+  CloudUploadOutlined,
+  PictureOutlined,
+} from "@ant-design/icons";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -18,8 +35,11 @@ const AddProduct: React.FC<AddProductDrawerProps> = ({ open, onClose }) => {
     <Drawer
       title={
         <Space size="large">
-          <CloseOutlined onClick={onClose} style={{ cursor: 'pointer', fontSize: '16px' }} />
-          <span style={{ fontSize: '18px', fontWeight: 600 }}>Add Product</span>
+          <CloseOutlined
+            onClick={onClose}
+            style={{ cursor: "pointer", fontSize: "16px" }}
+          />
+          <span style={{ fontSize: "18px", fontWeight: 600 }}>Add Product</span>
         </Space>
       }
       placement="bottom"
@@ -27,35 +47,54 @@ const AddProduct: React.FC<AddProductDrawerProps> = ({ open, onClose }) => {
       onClose={onClose}
       open={open}
       size="100%" // Chiếm 100% màn hình, tạo cảm giác chuyển trang
-      styles={{ 
-        header: { backgroundColor: '#f8f9fa', borderBottom: '1px solid #dee2e6', padding: '16px 24px' },
-        body: { backgroundColor: '#f4f6f8', padding: '24px 48px' } 
+      styles={{
+        header: {
+          backgroundColor: "#f8f9fa",
+          borderBottom: "1px solid #dee2e6",
+          padding: "16px 24px",
+        },
+        body: { backgroundColor: "#f4f6f8", padding: "24px 48px" },
       }}
     >
-      <Form layout="vertical" form={form} style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        
+      <Form
+        layout="vertical"
+        form={form}
+        style={{ maxWidth: "1200px", margin: "0 auto" }}
+      >
         {/* ROW 1 & 2: Name và Description */}
         <Form.Item label={<Text strong>Product Name</Text>} name="name">
           <Input size="large" />
         </Form.Item>
-        <Form.Item label={<Text strong>Product Description</Text>} name="description">
+        <Form.Item
+          label={<Text strong>Product Description</Text>}
+          name="description"
+        >
           <TextArea rows={5} size="large" />
         </Form.Item>
 
         {/* ROW 3: Category, Sub Category, 3rd Level, Price */}
         <Row gutter={24}>
           <Col span={6}>
-            <Form.Item label={<Text strong>Product Category</Text>} name="category">
+            <Form.Item
+              label={<Text strong>Product Category</Text>}
+              name="category"
+            >
               <Select size="large" />
             </Form.Item>
           </Col>
           <Col span={6}>
-            <Form.Item label={<Text strong>Product Sub Category</Text>} name="subCategory">
+            <Form.Item
+              label={<Text strong>Product Sub Category</Text>}
+              name="subCategory"
+            >
               <Select size="large" />
             </Form.Item>
           </Col>
           <Col span={6}>
-            <Form.Item label={<Text strong>Product Third Level Category</Text>} name="thirdCategory">
+            <Form.Item
+              label={<Text strong>Product Third Level Category</Text>}
+              name="thirdCategory"
+            >
               <Select size="large" />
             </Form.Item>
           </Col>
@@ -69,12 +108,18 @@ const AddProduct: React.FC<AddProductDrawerProps> = ({ open, onClose }) => {
         {/* ROW 4: Old Price, Is Featured, Stock, Brand */}
         <Row gutter={24}>
           <Col span={6}>
-            <Form.Item label={<Text strong>Product Old Price</Text>} name="oldPrice">
+            <Form.Item
+              label={<Text strong>Product Old Price</Text>}
+              name="oldPrice"
+            >
               <Input size="large" />
             </Form.Item>
           </Col>
           <Col span={6}>
-            <Form.Item label={<Text strong>Is Featured?</Text>} name="isFeatured">
+            <Form.Item
+              label={<Text strong>Is Featured?</Text>}
+              name="isFeatured"
+            >
               <Select size="large" />
             </Form.Item>
           </Col>
@@ -93,7 +138,10 @@ const AddProduct: React.FC<AddProductDrawerProps> = ({ open, onClose }) => {
         {/* ROW 5: Discount, RAMS, Weight, Size */}
         <Row gutter={24}>
           <Col span={6}>
-            <Form.Item label={<Text strong>Product Discount</Text>} name="discount">
+            <Form.Item
+              label={<Text strong>Product Discount</Text>}
+              name="discount"
+            >
               <Input size="large" />
             </Form.Item>
           </Col>
@@ -120,48 +168,87 @@ const AddProduct: React.FC<AddProductDrawerProps> = ({ open, onClose }) => {
         </Form.Item>
 
         {/* MEDIA & IMAGES */}
-        <Title level={5} style={{ marginTop: '24px' }}>Media & Images</Title>
+        <Title level={5} style={{ marginTop: "24px" }}>
+          Media & Images
+        </Title>
         <Form.Item name="images">
-          <Dragger style={{ width: '200px', height: '150px', backgroundColor: '#f8f9fa' }}>
+          <Dragger
+            style={{
+              width: "200px",
+              height: "150px",
+              backgroundColor: "#f8f9fa",
+            }}
+          >
             <p className="ant-upload-drag-icon">
-              <PictureOutlined style={{ fontSize: '32px', color: '#adb5bd' }} />
+              <PictureOutlined style={{ fontSize: "32px", color: "#adb5bd" }} />
             </p>
-            <p className="ant-upload-text" style={{ color: '#adb5bd' }}>Image Upload</p>
+            <p className="ant-upload-text" style={{ color: "#adb5bd" }}>
+              Image Upload
+            </p>
           </Dragger>
         </Form.Item>
 
         {/* BANNER IMAGES */}
-        <div style={{ backgroundColor: '#ffffff', padding: '24px', borderRadius: '8px', border: '1px solid #e8e8e8', marginTop: '32px' }}>
-          <Space size="middle" style={{ marginBottom: '16px' }}>
-            <Title level={5} style={{ margin: 0 }}>Banner Images</Title>
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            padding: "24px",
+            borderRadius: "8px",
+            border: "1px solid #e8e8e8",
+            marginTop: "32px",
+          }}
+        >
+          <Space size="middle" style={{ marginBottom: "16px" }}>
+            <Title level={5} style={{ margin: 0 }}>
+              Banner Images
+            </Title>
             <Switch defaultChecked />
           </Space>
-          
+
           <Form.Item name="bannerImages">
-            <Dragger style={{ width: '200px', height: '150px', backgroundColor: '#f8f9fa' }}>
+            <Dragger
+              style={{
+                width: "200px",
+                height: "150px",
+                backgroundColor: "#f8f9fa",
+              }}
+            >
               <p className="ant-upload-drag-icon">
-                <PictureOutlined style={{ fontSize: '32px', color: '#adb5bd' }} />
+                <PictureOutlined
+                  style={{ fontSize: "32px", color: "#adb5bd" }}
+                />
               </p>
-              <p className="ant-upload-text" style={{ color: '#adb5bd' }}>Image Upload</p>
+              <p className="ant-upload-text" style={{ color: "#adb5bd" }}>
+                Image Upload
+              </p>
             </Dragger>
           </Form.Item>
 
-          <Form.Item label={<Text strong>Banner Title</Text>} name="bannerTitle" style={{ marginTop: '24px' }}>
+          <Form.Item
+            label={<Text strong>Banner Title</Text>}
+            name="bannerTitle"
+            style={{ marginTop: "24px" }}
+          >
             <Input size="large" />
           </Form.Item>
         </div>
 
         {/* NÚT SUBMIT */}
-        <Button 
-          type="primary" 
-          block 
-          size="large" 
+        <Button
+          type="primary"
+          block
+          size="large"
           icon={<CloudUploadOutlined />}
-          style={{ height: '50px', fontSize: '16px', fontWeight: 600, marginTop: '32px', backgroundColor: '#3b82f6' }}
+          style={{
+            height: "50px",
+            fontSize: "16px",
+            fontWeight: 600,
+            marginTop: "32px",
+            backgroundColor: "#3b82f6",
+          }}
         >
           PUBLISH AND VIEW
         </Button>
-
       </Form>
     </Drawer>
   );
