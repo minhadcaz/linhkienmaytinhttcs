@@ -1,0 +1,314 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model baohanh {
+  idphieubh     String         @id @db.VarChar(50)
+  serialnumber  String         @db.VarChar(100)
+  idhdbh        String?        @db.VarChar(50)
+  ngaykichhoat  DateTime?      @default(now()) @db.Timestamptz(6)
+  ngayhethan    DateTime       @db.Timestamptz(6)
+  tinhtrang     String?        @default("Dang bao hanh") @db.VarChar(50)
+  ghichu        String?
+  hoadonbanhang hoadonbanhang? @relation(fields: [idhdbh], references: [idhdbh], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model cauhinhpc {
+  idcauhinh String     @id @db.VarChar(50)
+  idkh      String?    @db.VarChar(50)
+  cauhinh   Json?
+  khachhang khachhang? @relation(fields: [idkh], references: [idkh], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model chitietgiohang {
+  id_detail  Int      @id @default(autoincrement())
+  cart_id    Int?
+  product_id String?  @db.VarChar(50)
+  quantity   Int?
+  price      Int?
+  giohang    giohang? @relation(fields: [cart_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sanpham    sanpham? @relation(fields: [product_id], references: [idsp], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model chitiethoadon {
+  idhdbh        String        @db.VarChar(50)
+  idsp          String        @db.VarChar(50)
+  soluongban    Int
+  dongia        Decimal       @db.Decimal(12, 2)
+  tienthanhtoan Decimal?      @db.Decimal(12, 2)
+  hoadonbanhang hoadonbanhang @relation(fields: [idhdbh], references: [idhdbh], onDelete: NoAction, onUpdate: NoAction)
+  sanpham       sanpham       @relation(fields: [idsp], references: [idsp], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([idhdbh, idsp])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model chitietnhap {
+  idhdn      String     @db.VarChar(50)
+  idsp       String     @db.VarChar(50)
+  slnhap     Int
+  dongia     Decimal    @db.Decimal(12, 2)
+  hoadonnhap hoadonnhap @relation(fields: [idhdn], references: [idhdn], onDelete: NoAction, onUpdate: NoAction)
+  sanpham    sanpham    @relation(fields: [idsp], references: [idsp], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([idhdn, idsp])
+}
+
+model chitiettonkho {
+  idtk       String? @db.VarChar(50)
+  malinhkien String  @id @db.VarChar(50)
+  ghichu     String?
+  tonkho     tonkho? @relation(fields: [idtk], references: [idtk], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model chitietxuatkho {
+  idxuatkho    String?       @db.VarChar(50)
+  idsp         String?       @db.VarChar(50)
+  soluong      Int?          @default(0)
+  sanpham      sanpham?      @relation(fields: [idsp], references: [idsp], onDelete: NoAction, onUpdate: NoAction)
+  phieuxuatkho phieuxuatkho? @relation(fields: [idxuatkho], references: [idxuatkho], onDelete: NoAction, onUpdate: NoAction)
+
+  @@ignore
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model danhgiasp {
+  iddanhgia String     @id @db.VarChar(50)
+  idsp      String?    @db.VarChar(50)
+  idkh      String?    @db.VarChar(50)
+  review    String?
+  rating    Int?
+  khachhang khachhang? @relation(fields: [idkh], references: [idkh], onDelete: NoAction, onUpdate: NoAction)
+  sanpham   sanpham?   @relation(fields: [idsp], references: [idsp], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model giohang {
+  id             Int              @id @default(autoincrement())
+  idusers        String?          @db.VarChar(50)
+  sum            Int?
+  chitietgiohang chitietgiohang[]
+  users          users?           @relation(fields: [idusers], references: [idusers], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model hoadonbanhang {
+  idhdbh        String          @id @db.VarChar(50)
+  idkh          String?         @db.VarChar(50)
+  idnv          String?         @db.VarChar(50)
+  ngaytao       DateTime?       @default(now()) @db.Timestamp(6)
+  thanhtien     Decimal?        @default(0) @db.Decimal(12, 2)
+  baohanh       baohanh[]
+  chitiethoadon chitiethoadon[]
+  khachhang     khachhang?      @relation(fields: [idkh], references: [idkh], onDelete: NoAction, onUpdate: NoAction)
+  nhanvien      nhanvien?       @relation(fields: [idnv], references: [idnv], onDelete: NoAction, onUpdate: NoAction)
+  phieugiaohang phieugiaohang?
+  thanhtoan     thanhtoan[]
+}
+
+model hoadonnhap {
+  idhdn       String        @id @db.VarChar(50)
+  idncc       String?       @db.VarChar(50)
+  idnv        String?       @db.VarChar(50)
+  ngaylap     DateTime?     @default(now()) @db.Timestamp(6)
+  chitietnhap chitietnhap[]
+  nhacungcap  nhacungcap?   @relation(fields: [idncc], references: [idncc], onDelete: NoAction, onUpdate: NoAction)
+  nhanvien    nhanvien?     @relation(fields: [idnv], references: [idnv], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model imei {
+  idsp    String?  @db.VarChar(50)
+  imei    String?  @db.VarChar(100)
+  sanpham sanpham? @relation(fields: [idsp], references: [idsp], onDelete: NoAction, onUpdate: NoAction)
+
+  @@ignore
+}
+
+model khachhang {
+  idkh          String          @id @db.VarChar(50)
+  idusers       String?         @unique @db.VarChar(50)
+  tenkh         String          @db.VarChar(100)
+  diachi        Json?
+  sdt           String?         @unique @db.VarChar(20)
+  cauhinhpc     cauhinhpc[]
+  danhgiasp     danhgiasp[]
+  hoadonbanhang hoadonbanhang[]
+  users         users?          @relation(fields: [idusers], references: [idusers], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model khuyenmai {
+  idkm            String      @id @db.VarChar(50)
+  tenctkm         String      @db.VarChar(200)
+  loaigiamgia     String      @db.VarChar(50)
+  giatrigiam      Decimal     @db.Decimal(12, 2)
+  giamtoida       Decimal?    @db.Decimal(12, 2)
+  donhangtoithieu Decimal?    @default(0) @db.Decimal(12, 2)
+  soluong         Int?        @default(0)
+  ngaybatdau      DateTime?   @db.Timestamptz(6)
+  ngayketthuc     DateTime?   @db.Timestamptz(6)
+  sanphamapdung   Json?
+  magiamgia       magiamgia[]
+}
+
+model loaigiaohang {
+  idloaigh        String          @id @db.VarChar(50)
+  tenloaigh       String          @db.VarChar(100)
+  donhangtoithieu Decimal?        @default(0) @db.Decimal(12, 2)
+  phigiaohang     Decimal?        @default(0) @db.Decimal(12, 2)
+  phieugiaohang   phieugiaohang[]
+}
+
+model loaisanpham {
+  idcate   String    @id @db.VarChar(50)
+  namecate String    @unique @db.VarChar(100)
+  sanpham  sanpham[]
+}
+
+model magiamgia {
+  idmagiam  Int        @id @default(autoincrement())
+  idkm      String?    @db.VarChar(50)
+  code      String     @unique @db.VarChar(50)
+  khuyenmai khuyenmai? @relation(fields: [idkm], references: [idkm], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model nhacungcap {
+  idncc      String       @id @db.VarChar(50)
+  tenncc     String       @db.VarChar(150)
+  sdt        String?      @db.VarChar(20)
+  diachi     String?
+  hoadonnhap hoadonnhap[]
+}
+
+model nhanvien {
+  idnv          String          @id @db.VarChar(50)
+  idusers       String?         @unique @db.VarChar(50)
+  tennv         String          @db.VarChar(100)
+  gioitinh      String?         @db.VarChar(10)
+  ngaysinh      DateTime?       @db.Date
+  diachi        String?
+  phonenum      String?         @db.VarChar(50)
+  hoadonbanhang hoadonbanhang[]
+  hoadonnhap    hoadonnhap[]
+  users         users?          @relation(fields: [idusers], references: [idusers], onDelete: NoAction, onUpdate: NoAction)
+  phieuxuatkho  phieuxuatkho[]
+}
+
+model nhasanxuat {
+  idnsx   String    @id @db.VarChar(50)
+  tennsx  String    @db.VarChar(150)
+  quocgia String?
+  website String?   @db.VarChar(100)
+  sanpham sanpham[]
+}
+
+model phieugiaohang {
+  idphieugh     String         @id @db.VarChar(50)
+  idhdbh        String?        @unique @db.VarChar(50)
+  idloaigh      String?        @db.VarChar(50)
+  ngaygiao      DateTime?      @db.Timestamp(6)
+  nvgiaohang    String?        @db.VarChar(100)
+  nguoinhan     String?        @db.VarChar(100)
+  sdtnhan       String?        @db.VarChar(20)
+  diachinhan    String?
+  hoadonbanhang hoadonbanhang? @relation(fields: [idhdbh], references: [idhdbh], onDelete: NoAction, onUpdate: NoAction)
+  loaigiaohang  loaigiaohang?  @relation(fields: [idloaigh], references: [idloaigh], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model phieuxuatkho {
+  idxuatkho      String           @id @db.VarChar(50)
+  ngayxuatkho    DateTime?        @db.Date
+  idnv           String?          @db.VarChar(50)
+  chitietxuatkho chitietxuatkho[] @ignore
+  nhanvien       nhanvien?        @relation(fields: [idnv], references: [idnv], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model sanpham {
+  idsp           String           @id @db.VarChar(50)
+  idcate         String?          @db.VarChar(50)
+  idnsx          String?          @db.VarChar(50)
+  tensp          String           @db.VarChar(255)
+  chitietsp      String?
+  gianiemyet     Decimal          @db.Decimal(12, 2)
+  tinhtrang      String?          @db.VarChar(50)
+  baohanh        String?          @db.VarChar(50)
+  giakm          Decimal?         @db.Decimal(12, 2)
+  hinhanh        Json?
+  thongsokythuat Json?
+  featured       Boolean?         @default(false)
+  chitietgiohang chitietgiohang[]
+  chitiethoadon  chitiethoadon[]
+  chitietnhap    chitietnhap[]
+  chitietxuatkho chitietxuatkho[] @ignore
+  danhgiasp      danhgiasp[]
+  imei           imei[]           @ignore
+  loaisanpham    loaisanpham?     @relation(fields: [idcate], references: [idcate], onDelete: NoAction, onUpdate: NoAction)
+  nhasanxuat     nhasanxuat?      @relation(fields: [idnsx], references: [idnsx], onDelete: NoAction, onUpdate: NoAction)
+  tonkho         tonkho[]
+}
+
+model sodiachi {
+  id          Int       @id @default(autoincrement())
+  user_id     String    @db.VarChar(50)
+  full_name   String    @db.VarChar(255)
+  phone       String    @db.VarChar(20)
+  street      String    @db.VarChar(255)
+  district    String    @db.VarChar(100)
+  city        String    @db.VarChar(100)
+  postal_code String?   @db.VarChar(20)
+  is_default  Boolean?  @default(false)
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+  users       users     @relation(fields: [user_id], references: [idusers], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model thanhtoan {
+  idthanhtoan    String        @id @db.VarChar(50)
+  idhdbh         String        @db.VarChar(50)
+  phuongthuc     String?       @db.VarChar(50)
+  provider       String?       @db.VarChar(100)
+  amount         Decimal       @db.Decimal(12, 2)
+  currency       String?       @default("VND") @db.VarChar(10)
+  trangthai      String?       @default("pending") @db.VarChar(50)
+  transaction_id String?       @unique(map: "idx_thanhtoan_transaction_id") @db.VarChar(200)
+  payer_email    String?       @db.VarChar(200)
+  payer_phone    String?       @db.VarChar(50)
+  metadata       Json?
+  created_at     DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at     DateTime?     @default(now()) @db.Timestamp(6)
+  hoadonbanhang  hoadonbanhang @relation(fields: [idhdbh], references: [idhdbh], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([idhdbh], map: "idx_thanhtoan_hdbh")
+}
+
+model tonkho {
+  idtk          String          @id @db.VarChar(50)
+  idsp          String?         @db.VarChar(50)
+  donvi         String?         @db.VarChar(50)
+  soluong       Int?
+  chitiettonkho chitiettonkho[]
+  sanpham       sanpham?        @relation(fields: [idsp], references: [idsp], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  idusers         String     @id @db.VarChar(50)
+  username        String     @unique @db.VarChar(50)
+  pass            String     @db.VarChar(255)
+  email           String?    @unique @db.VarChar(100)
+  tinhtrang       String?    @default("Hoat dong") @db.VarChar(50)
+  roles           String?    @default("admin") @db.VarChar(20)
+  ngaytao         DateTime?  @default(now()) @db.Timestamp(6)
+  hoatdonggannhat DateTime?  @default(now()) @db.Timestamp(6)
+  giohang         giohang[]
+  khachhang       khachhang?
+  nhanvien        nhanvien?
+  sodiachi        sodiachi[]
+}
