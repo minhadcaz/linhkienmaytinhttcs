@@ -14,13 +14,12 @@ interface Brand {
   idnsx: string;
   tennsx: string;
 }
-interface AddProductDrawerProps {
-  open: boolean;
-  onClose: () => void;
-  initialData?: any;
-}
+// interface AddProductDrawerProps {
+//   open: boolean;
+//   onClose: () => void;
+// }
 
-const AddProduct: React.FC<AddProductDrawerProps> = ({ open, onClose }) => {
+const EditProduct: React.FC<any> = ({ open, onClose ,initialData}) => {
   const [form] = Form.useForm();
 
   // State quản lý cách nhập ảnh: 'link' hoặc 'upload'
@@ -52,32 +51,53 @@ const AddProduct: React.FC<AddProductDrawerProps> = ({ open, onClose }) => {
   //     fetchData();
   //   }
   // }, [open]);
+  // useEffect(() => {
+  //   const fetchDropdownData = async () => {
+  //     try {
+  //       // Lấy token nếu API của bạn được bảo vệ bởi verifyToken
+  //       const token = localStorage.getItem('access_token');
+  //       const config = {
+  //         headers: { Authorization: `Bearer ${token}` }
+  //       };
+
+  //       // Gọi đồng thời 2 API để lấy danh sách Loại SP và Nhà SX
+  //       const [categoryRes, brandRes] = await Promise.all([
+  //         axios.get('http://localhost:8080/api/data/categories', config),
+  //         axios.get('http://localhost:8080/api/data/brands', config)
+  //       ]);
+
+  //       // Cập nhật vào State
+  //       setCategories(categoryRes.data);
+  //       setBrands(brandRes.data);
+  //     } catch (error) {
+  //       console.error("Lỗi khi tải danh mục và nhà sản xuất:", error);
+  //     }
+  //   };
+
+  //   fetchDropdownData();
+  // }, []); // Mảng rỗng [] đảm bảo chỉ gọi API 1 lần khi mở trang
+  // // Tự động set giá khuyến mãi (giakm) bằng giá niêm yết (gianiemyet) khi nhập
   useEffect(() => {
-    const fetchDropdownData = async () => {
-      try {
-        // Lấy token nếu API của bạn được bảo vệ bởi verifyToken
-        const token = localStorage.getItem('access_token');
-        const config = {
-          headers: { Authorization: `Bearer ${token}` }
-        };
-
-        // Gọi đồng thời 2 API để lấy danh sách Loại SP và Nhà SX
-        const [categoryRes, brandRes] = await Promise.all([
-          axios.get('http://localhost:8080/api/data/categories', config),
-          axios.get('http://localhost:8080/api/data/brands', config)
-        ]);
-
-        // Cập nhật vào State
-        setCategories(categoryRes.data);
-        setBrands(brandRes.data);
-      } catch (error) {
-        console.error("Lỗi khi tải danh mục và nhà sản xuất:", error);
-      }
-    };
-
-    fetchDropdownData();
-  }, []); // Mảng rỗng [] đảm bảo chỉ gọi API 1 lần khi mở trang
-  // Tự động set giá khuyến mãi (giakm) bằng giá niêm yết (gianiemyet) khi nhập
+    if (initialData && open) {
+      // Đổ dữ liệu text/số vào Form
+      form.setFieldsValue({
+        tensp: initialData.tensp,
+        idcate: initialData.idcate,
+        idnsx: initialData.idnsx,
+        gianiemyet: initialData.gianiemyet,
+        giakm: initialData.giakm,
+        soluong: initialData.soluong,
+        tinhtrang: initialData.tinhtrang,
+        baohanh: initialData.baohanh,
+      });
+      // Đổ dữ liệu mảng ảnh vào thẻ Select tags
+      setImageLinks(initialData.hinhanh || []);
+    } else if (!open) {
+      // Reset form khi đóng Modal
+      form.resetFields();
+      setImageLinks([]);
+    }
+  }, [initialData, open, form]);
   const gianiemyet = Form.useWatch("gianiemyet", form);
   useEffect(() => {
     if (gianiemyet !== undefined) {
@@ -88,24 +108,24 @@ const AddProduct: React.FC<AddProductDrawerProps> = ({ open, onClose }) => {
   const onFinish = async (values: any) => {
     try {
       const token = localStorage.getItem('access_token');
-      const selectedCate = categories.find(c => c.idcate === values.idcate);
       const config = { headers: { Authorization: `Bearer ${token}` } };
+      const payload = { ...values, imageLinks };
 
-      const payload = {
-        ...values,
-        imageLinks: imageLinks
-      };
-
-
-      await axios.post('http://localhost:8080/api/products/add',
-        { ...values, namecate: selectedCate?.namecate, imageLinks },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      message.success("Thêm sản phẩm thành công!");
+      if (initialData) {
+        // NẾU LÀ SỬA (Gọi API PUT)
+        await axios.put(`http://localhost:8080/api/products/${initialData.idsp}`, payload, config);
+        message.success("Cập nhật sản phẩm thành công!");
+      } else {
+        // NẾU LÀ THÊM MỚI (Gọi API POST)
+        await axios.post('http://localhost:8080/api/products/add', payload, config);
+        message.success("Thêm sản phẩm thành công!");
+      }
+      
       form.resetFields();
+      setImageLinks([]);
       onClose();
-    } catch (e) {
-      message.error("Lỗi khi thêm sản phẩm!");
+    } catch (error) {
+      message.error("Có lỗi xảy ra!");
     }
   };
 
@@ -114,7 +134,7 @@ const AddProduct: React.FC<AddProductDrawerProps> = ({ open, onClose }) => {
       title={
         <Space size="large">
           <CloseOutlined onClick={onClose} style={{ cursor: "pointer", fontSize: "16px" }} />
-          <span style={{ fontSize: "18px", fontWeight: 600 }}>Thêm Sản Phẩm Mới</span>
+          <span style={{ fontSize: "18px", fontWeight: 600 }}> {initialData ? "CHỈNH SỬA SẢN PHẨM" : "THÊM SẢN PHẨM MỚI"}`</span>
         </Space>
       }
       placement="bottom"
@@ -225,11 +245,11 @@ const AddProduct: React.FC<AddProductDrawerProps> = ({ open, onClose }) => {
         </Form.Item>
 
         <Button type="primary" htmlType="submit" block size="large" style={{ height: "50px", fontSize: "16px", fontWeight: 600, marginTop: "16px", backgroundColor: "#3b82f6" }}>
-          LƯU SẢN PHẨM MỚI
+          {initialData ? "LƯU THAY ĐỔI" : "LƯU SẢN PHẨM MỚI"}
         </Button>
       </Form>
     </Drawer>
   );
 };
 
-export default AddProduct;
+export default EditProduct;

@@ -29,7 +29,11 @@ const LoginPage: React.FC = () => {
       login(access_token, user);
 
       message.success("Đăng nhập thành công!");
-      navigate("/"); // Chuyển về trang chủ
+      if (user.roles === 'ADMIN' || user.roles === 'admin') {
+        navigate('/admin'); // Chuyển thẳng vào trang Dashboard của Admin
+      } else {
+        navigate('/');      // Khách hàng bình thường thì về Trang chủ
+      }
     } catch (error) {
       console.error(error);
       message.error("Sai tên đăng nhập hoặc mật khẩu!");

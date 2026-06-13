@@ -18,6 +18,7 @@ import RegisterPage from "./pages/registerpage";
 import LoginPage from "./pages/loginpage";
 import { AuthProvider } from "./context/authcontext"; // Import AuthProvider vừa tạo
 import { CartProvider } from "./context/cartcontext"; // CartProvider đã có sẵn
+import AdminProductPage from "./pages/adminproduct";
 // import { AuthProvider } from './context/AuthContext.tsx';
 // (Tạm thời tạo các component giả để test)
 const HomePage = () => {
@@ -58,6 +59,7 @@ const App: React.FC = () => {
               <Route index element={<AdminDashboard />} />
               <Route path="users" element={<AdminUsersPage />} />
               <Route path="orders" element={<AdminOrdersPage />} />
+              <Route path="products" element={<AdminProductPage />} />
               {/* Ví dụ trang quản lý sản phẩm */}
               <Route
                 path="products"

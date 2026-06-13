@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { Layout, Menu, Button, Typography, theme, Drawer, Grid } from "antd";
 import { Outlet, useNavigate } from "react-router";
 import {
@@ -12,6 +12,7 @@ import {
   MenuOutlined,
   FileImageOutlined,
 } from "@ant-design/icons";
+import { AuthContext } from "../context/authcontext";
 
 const { Header, Sider, Content } = Layout;
 const { useBreakpoint } = Grid; // Sử dụng hook để lấy kích thước màn hình
@@ -31,35 +32,20 @@ const AdminLayout: React.FC = () => {
 
   // Lấy trạng thái kích thước màn hình hiện tại (xs, sm, md, lg, xl, xxl)
   const screens = useBreakpoint();
-
+  const { user, logout } = useContext(AuthContext);
+  const handleLogout = () => {
+    logout(); // Xóa token
+    navigate('/login'); // Đẩy về trang đăng nhập
+  };
   const menuItems = [
     { key: "dashboard", icon: <AppstoreOutlined />, label: "Dashboard" },
-    {
-      key: "home-slides",
-      icon: <PictureOutlined />,
-      label: "Home Slides",
-      children: [
-        { key: "slide-list", label: "All Slides" },
-        { key: "slide-add", label: "Add Slide" },
-      ],
-    },
-    {
-      key: "category",
-      icon: <AppstoreOutlined />,
-      label: "Category",
-      children: [
-        { key: "cat-list", label: "All Categories" },
-        { key: "cat-add", label: "Add Category" },
-      ],
-    },
+
+
     {
       key: "products",
       icon: <TagOutlined />,
-      label: "Products",
-      children: [
-        { key: "prod-list", label: "All Products" },
-        { key: "prod-add", label: "Add Product" },
-      ],
+      label: "Products"
+
     },
     { key: "users", icon: <UserOutlined />, label: "Users" },
     { key: "orders", icon: <ShoppingOutlined />, label: "Orders" },
@@ -76,7 +62,7 @@ const AdminLayout: React.FC = () => {
       children: [{ key: "blog-list", label: "All Blogs" }],
     },
     { key: "manage-logo", icon: <PictureOutlined />, label: "Manage Logo" },
-    { key: "logout", icon: <LogoutOutlined />, label: "Logout" },
+    { key: "logout", icon: <LogoutOutlined />, label: "Logout" , onClick: handleLogout},
   ];
 
   // Hàm xử lý khi bấm nút Menu trên Header
@@ -123,7 +109,10 @@ const AdminLayout: React.FC = () => {
           } else if (e.key === "logout") {
             // Logic đăng xuất sẽ xử lý sau
             console.log("Đăng xuất...");
-          } else {
+          } else if (e.key === "products") {
+            navigate("/admin/products");
+          }
+          else {
             // Các trang khác lấy chính key làm URL (ví dụ: orders -> /admin/orders)
             navigate(`/admin/${e.key}`);
           }

@@ -10,6 +10,7 @@ import {
 } from "antd";
 import {
   LoginOutlined,
+  LogoutOutlined,
   SearchOutlined,
   ShoppingCartOutlined,
   UserAddOutlined,
@@ -24,7 +25,15 @@ const { Title } = Typography;
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useContext(AuthContext);
+  // 2. Khởi tạo hook lấy đường dẫn URL hiện tại
+  const location = useLocation();
+  // // Lấy dữ liệu từ Context
+  const { cartItems } = useCart();
+  const { isAuthenticated, user, logout } = useContext(AuthContext);
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   // Khai báo menu cho ô User (Dropdown)
   const userDropdownItems = [
@@ -41,10 +50,30 @@ const Navbar: React.FC = () => {
       onClick: () => navigate("/register"), // Chuyển hướng sang trang Register
     },
   ];
-  // 2. Khởi tạo hook lấy đường dẫn URL hiện tại
-  const location = useLocation();
-  // // Lấy dữ liệu từ Context
-  const { cartItems } = useCart();
+  const loggedInDropdownItems = [
+    {
+      key: 'greeting',
+      label: <span style={{ fontWeight: 600 }}>Xin chào, {user?.username || 'Bạn'}</span>,
+      disabled: true,
+    },
+    {
+      type: 'divider' as const,
+    },
+    {
+      key: 'profile',
+      icon: <UserOutlined />,
+      label: 'Hồ sơ cá nhân',
+      onClick: () => navigate('/profile'), // Nút bấm vào trang profile
+    },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: 'Đăng xuất',
+      danger: true,
+      onClick: handleLogout,
+    },
+  ];
+
 
   // // Tính tổng số lượng thực tế (VD: 2 CPU + 1 GPU = 3)
   const totalItemCount = cartItems.reduce(
@@ -151,19 +180,12 @@ const Navbar: React.FC = () => {
           </Link>
           <Link to="/profile"></Link>
           {isAuthenticated ? (
-            <Link to="/profile">
-              <Badge count={totalItemCount} size="small" offset={[-2, 2]}>
-                <Button
-                  icon={<UserOutlined style={{ fontSize: "18px" }} />}
-                  // Gộp hàm getButtonStyle và kích thước vào chung 1 object style
-                  style={{
-                    ...getButtonStyle("/profile"),
-                    width: "40px",
-                    height: "40px",
-                  }}
-                />
-              </Badge>
-            </Link>
+            <Dropdown menu={{ items: loggedInDropdownItems }} placement="bottomRight" arrow>
+              <Button
+                icon={<UserOutlined style={{ fontSize: '18px' }} />}
+                style={{ ...getButtonStyle('/profile'), width: '40px', height: '40px' }}
+              />
+            </Dropdown>
           ) : (
             <Dropdown
               menu={{ items: userDropdownItems }}

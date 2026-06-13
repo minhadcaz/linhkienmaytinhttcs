@@ -1,56 +1,133 @@
-import React from 'react';
-import { Row, Col, Typography, Input, Checkbox, Select, Button, Card, Space, Divider } from 'antd';
+import React, { useEffect, useState } from "react";
+import {
+  Row,
+  Col,
+  Typography,
+  Input,
+  Checkbox,
+  Select,
+  Button,
+  Card,
+  Space,
+  Spin,
+  message,
+} from "antd";
 import {
   FilterOutlined,
   AppstoreOutlined,
   UnorderedListOutlined,
-  ShoppingCartOutlined
-} from '@ant-design/icons';
-import { products } from '../data/product';
-import { Link } from 'react-router';
+  ShoppingCartOutlined,
+} from "@ant-design/icons";
+import { Link } from "react-router";
+import axios from "axios";
+import { useCart } from "../context/cartcontext";
+
 const { Title, Text } = Typography;
 
-// --- DỮ LIỆU MẪU (Mock Data) ---
+// --- DỮ LIỆU BỘ LỌC (Tạm thời giữ nguyên tĩnh, bạn có thể thay đổi sau) ---
 const brands = [
-  { label: 'ASUS', count: 15, value: 'ASUS' },
-  { label: 'MSI', count: 12, value: 'MSI' },
-  { label: 'Gigabyte', count: 8, value: 'Gigabyte' },
-  { label: 'Palit', count: 6, value: 'Palit' },
-  { label: 'G.Skill', count: 10, value: 'G.Skill' },
-  { label: 'Cooler Master', count: 9, value: 'Cooler_Master' },
+  { label: "ASUS", count: 15, value: "ASUS" },
+  { label: "MSI", count: 12, value: "MSI" },
+  { label: "Gigabyte", count: 8, value: "Gigabyte" },
+  { label: "G.Skill", count: 10, value: "G.Skill" },
 ];
 
-const categories = ['Motherboards', 'Graphics Cards', 'Memory (RAM)', 'Processors', 'Cooling', 'Cases'];
 
-const mockProducts = [
-  { id: 1, name: 'AMD Ryzen 7 7800X3D', category: 'CPU', price: 449.99, rating: 4.8, reviews: 2234, isSale: false, isFeatured: false },
-  { id: 2, name: 'Asus AMD Radeon RX 7600 XT', category: 'GPU', price: 329.99, rating: 4.4, reviews: 756, isSale: false, isFeatured: false },
-  { id: 3, name: 'ASUS ROG Strix Z790-E Gaming', category: 'MOTHERBOARD', price: 449.99, originalPrice: 499.99, rating: 4.8, reviews: 1247, isSale: true, isFeatured: true },
-  { id: 4, name: 'Corsair Vengeance RGB Pro 32GB', category: 'RAM', price: 139.99, originalPrice: 159.99, rating: 4.7, reviews: 3421, isSale: true, isFeatured: true },
-  { id: 5, name: 'Fractal Design Define 7 XL', category: 'CASE', price: 199.99, originalPrice: 229.99, rating: 4.6, reviews: 1432, isSale: true, isFeatured: true },
-  { id: 6, name: 'G.SKILL Trident Z5 Neo 32GB', category: 'RAM', price: 189.99, rating: 4.8, reviews: 1823, isSale: false, isFeatured: false },
-];
+// --- ĐỊNH NGHĨA KIỂU DỮ LIỆU TỪ DATABASE (Dựa theo schema.txt) ---
+interface SanPhamType {
+  idsp: string;
+  tensp: string;
+  gianiemyet: string | number;
+  giakm: string | number | null;
+  tinhtrang: string;
+  hinhanh: any; // Trong schema là kiểu Json
+  featured: boolean;
+}
 
 const ProductsPage: React.FC = () => {
-  return (
-    <div style={{ padding: '24px', backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+  // 1. KHAI BÁO STATE ĐỂ CHỨA DỮ LIỆU SẢN PHẨM TỪ API
+  const [products, setProducts] = useState<SanPhamType[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const { addToCart } = useCart();
+  // 2. GỌI API LẤY DỮ LIỆU NGAY KHI VÀO TRANG
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        // Thay url này bằng port backend của bạn (thường là 8080)
+        const response = await axios.get("http://localhost:8080/api/products/all");
+        setProducts(response.data.data||[]);
+      } catch (error) {1
+        message.error("Không thể lấy danh sách sản phẩm từ máy chủ!");
+        console.error("Lỗi fetch API:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-        {/* KHU VỰC 1: TIÊU ĐỀ VÀ NÚT CHUYỂN VIEW */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <div>
-            <Title level={2} style={{ margin: 0, fontWeight: 900 }}>All Products</Title>
-            <Text type="secondary">12 products found</Text>
-          </div>
+    fetchProducts();
+  }, []);
+
+  // Hàm chuyển đổi tiền tệ sang VNĐ
+  const formatVND = (price: string | number) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(Number(price));
+  };
+
+  // Hiển thị hiệu ứng xoay (loading) trong lúc chờ API trả dữ liệu
+  if (loading) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+        }}
+      >
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        padding: "24px",
+        backgroundColor: "#f8f9fa",
+        minHeight: "100vh",
+      }}
+    >
+      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+        {/* KHU VỰC 1: TIÊU ĐỀ */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "24px",
+          }}
+        >
+          <Title level={2} style={{ margin: 0, fontWeight: 900 }}>
+            Tất cả sản phẩm{" "}
+            <span style={{ fontSize: "16px", color: "gray", fontWeight: 500 }}>
+              ({products.length} sản phẩm tìm thấy)
+            </span>
+          </Title>
           <Space>
             <Button
               type="primary"
               icon={<AppstoreOutlined />}
-              style={{ backgroundColor: '#212529', borderColor: '#212529', borderRadius: '0px' }}
+              style={{
+                backgroundColor: "#212529",
+                borderColor: "#212529",
+                borderRadius: "0px",
+              }}
             />
             <Button
               icon={<UnorderedListOutlined />}
-              style={{ borderRadius: '0px' }}
+              style={{ borderRadius: "0px" }}
             />
           </Space>
         </div>
@@ -60,27 +137,50 @@ const ProductsPage: React.FC = () => {
           <Col xs={24} md={6}>
             <Card
               bordered={true}
-              style={{ borderRadius: '0px', borderColor: '#ced4da' }}
-              headStyle={{ borderBottom: '1px solid #ced4da', padding: '0 16px' }}
-              bodyStyle={{ padding: '16px' }}
+              style={{ borderRadius: "0px", borderColor: "#ced4da" }}
+              headStyle={{
+                borderBottom: "1px solid #ced4da",
+                padding: "0 16px",
+              }}
+              bodyStyle={{ padding: "16px" }}
               title={
-                <Space>
-                  <FilterOutlined /> <Text strong>Filters</Text>
-                </Space>
+                <>
+                  <FilterOutlined /> Filters
+                </>
               }
             >
               {/* Tìm kiếm */}
-              <div style={{ marginBottom: '24px' }}>
-                <Text strong style={{ display: 'block', marginBottom: '8px' }}>Search</Text>
-                <Input placeholder="Search products..." style={{ borderRadius: '0px' }} />
+              <div style={{ marginBottom: "24px" }}>
+                <Text strong style={{ display: "block", marginBottom: "8px" }}>
+                  Tìm kiếm
+                </Text>
+                <Input
+                  placeholder="Tên sản phẩm..."
+                  style={{ borderRadius: "0px" }}
+                />
               </div>
 
               {/* Lọc theo Hãng */}
-              <div style={{ marginBottom: '24px' }}>
-                <Text strong style={{ display: 'block', marginBottom: '8px' }}>Brands</Text>
-                <Checkbox.Group style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {brands.map(brand => (
-                    <div key={brand.value} style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ marginBottom: "24px" }}>
+                <Text strong style={{ display: "block", marginBottom: "8px" }}>
+                  Thương hiệu
+                </Text>
+                <Checkbox.Group
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                  }}
+                >
+                  {brands.map((brand) => (
+                    <div
+                      key={brand.value}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                      }}
+                    >
                       <Checkbox value={brand.value}>{brand.label}</Checkbox>
                       <Text type="secondary">({brand.count})</Text>
                     </div>
@@ -88,104 +188,226 @@ const ProductsPage: React.FC = () => {
                 </Checkbox.Group>
               </div>
 
-              {/* Lọc theo Danh mục */}
-              <div style={{ marginBottom: '24px' }}>
-                <Text strong style={{ display: 'block', marginBottom: '8px' }}>Categories</Text>
-                <Checkbox.Group style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {categories.map(cat => (
-                    <Checkbox key={cat} value={cat}>{cat}</Checkbox>
-                  ))}
-                </Checkbox.Group>
-              </div>
-
               {/* Lọc Khoảng giá */}
-              <div style={{ marginBottom: '24px' }}>
-                <Text strong style={{ display: 'block', marginBottom: '8px' }}>Price Range</Text>
-                <Space style={{ width: '100%', marginBottom: '16px' }}>
-                  <Input placeholder="Min" style={{ borderRadius: '0px' }} />
-                  <Input placeholder="Max" style={{ borderRadius: '0px' }} />
+              <div style={{ marginBottom: "24px" }}>
+                <Text strong style={{ display: "block", marginBottom: "8px" }}>
+                  Khoảng giá
+                </Text>
+                <Space style={{ width: "100%", marginBottom: "16px" }}>
+                  <Input placeholder="Min" style={{ borderRadius: "0px" }} />
+                  <Input placeholder="Max" style={{ borderRadius: "0px" }} />
                 </Space>
-                <Button block style={{ borderRadius: '0px', borderColor: '#ced4da' }}>
-                  Clear All Filters
+                <Button
+                  block
+                  style={{ borderRadius: "0px", borderColor: "#ced4da" }}
+                >
+                  Áp dụng
                 </Button>
               </div>
             </Card>
           </Col>
 
-          {/* KHU VỰC 3: DANH SÁCH SẢN PHẨM */}
+          {/* KHU VỰC 3: DANH SÁCH SẢN PHẨM TỪ DATABASE */}
           <Col xs={24} md={18}>
             {/* Thanh Sort */}
             <Card
-              bodyStyle={{ padding: '12px 16px', display: 'flex', alignItems: 'center' }}
-              style={{ borderRadius: '0px', borderColor: '#ced4da', marginBottom: '24px' }}
+              bodyStyle={{
+                padding: "12px 16px",
+                display: "flex",
+                alignItems: "center",
+              }}
+              style={{
+                borderRadius: "0px",
+                borderColor: "#ced4da",
+                marginBottom: "24px",
+              }}
             >
-              <Text style={{ marginRight: '12px' }}>Sort by:</Text>
+              <Text style={{ marginRight: "12px" }}>Sắp xếp theo:</Text>
               <Select
                 defaultValue="name-asc"
-                style={{ width: 150 }}
-                options={[{ value: 'name-asc', label: 'Name A-Z' }, { value: 'name-desc', label: 'Name Z-A' }, { value: 'price-asc', label: 'Price Low to High' }, { value: 'price-desc', label: 'Price High to Low' }]}
+                style={{ width: 180 }}
+                options={[
+                  { value: "name-asc", label: "Tên A-Z" },
+                  { value: "name-desc", label: "Tên Z-A" },
+                  { value: "price-asc", label: "Giá Thấp đến Cao" },
+                  { value: "price-desc", label: "Giá Cao đến Thấp" },
+                ]}
               />
             </Card>
 
             {/* Lưới Sản phẩm */}
-            <Row gutter={[16, 16]}> {/*fixed*/}
+            <Row gutter={[16, 16]}>
+              {/* DUYỆT QUA MẢNG DỮ LIỆU PRODUCTS TỪ API */}
               {products.map((product) => {
-                const isSale = product.originalPrice && product.originalPrice > product.price;
+                // Xử lý giá: Nếu có giá khuyến mãi (giakm) thì xem như đang SALE
+                const isSale =
+                  product.giakm !== null && Number(product.giakm) > 0;
+                const currentPrice = isSale
+                  ? product.giakm
+                  : product.gianiemyet;
+                const originalPrice = isSale ? product.gianiemyet : null;
+
+                // Xử lý hình ảnh JSON (vì trong Database lưu kiểu mảng đường dẫn)
+                let imageUrl = "https://via.placeholder.com/200"; // Ảnh mặc định nếu lỗi
+                if (product.hinhanh) {
+                  if (
+                    Array.isArray(product.hinhanh) &&
+                    product.hinhanh.length > 0
+                  ) {
+                    imageUrl = product.hinhanh[0]; // Lấy ảnh đầu tiên trong mảng JSON
+                  } else if (typeof product.hinhanh === "string") {
+                    imageUrl = product.hinhanh; // Nếu lưu dạng string cứng
+                  }
+                }
+
                 return (
-                  <Col xs={24} sm={12} lg={8} key={product.id}>
+                  // Bổ sung thẻ <Col> bọc thẻ <Card> để chia grid thành 3 cột đều nhau trên màn hình lớn
+                  <Col xs={24} sm={12} lg={8} key={product.idsp}>
                     <Card
                       hoverable
-                      styles={{ body: { padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' } }}
-                      style={{ borderRadius: '0px', borderColor: '#ced4da', height: '100%' }}
+                      styles={{
+                        body: {
+                          padding: "16px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "12px",
+                          height: "100%",
+                        },
+                      }}
+                      style={{
+                        borderRadius: "0px",
+                        borderColor: "#ced4da",
+                        height: "100%",
+                      }}
                     >
-                      <Link to={`/product/${product.id}`} style={{ display: 'block', color: 'inherit' }}>
+                      <Link
+                        to={`/product/${product.idsp}`}
+                        style={{
+                          display: "block",
+                          color: "inherit",
+                          flexGrow: 1,
+                        }}
+                      >
                         {/* Hình ảnh và Nhãn */}
-                        <div style={{ position: 'relative', height: '220px', border: '1px dashed #ced4da', backgroundColor: '#f8f9fa', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                        <div
+                          style={{
+                            position: "relative",
+                            height: "220px",
+                            border: "1px dashed #ced4da",
+                            backgroundColor: "#ffffff",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: "8px",
+                          }}
+                        >
                           <img
-                            src={product.image}
-                            alt={product.name}
+                            src={imageUrl}
+                            alt={product.tensp}
                             style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'contain', // Quan trọng nhất: Giữ tỷ lệ, không cắt ảnh
-                              padding: '8px' // (Tùy chọn) Thêm padding nhỏ để ảnh không đâm xuyên qua viền đứt nét
+                              maxWidth: "100%",
+                              maxHeight: "100%",
+                              objectFit: "contain",
                             }}
                           />
                           {isSale && (
-                            <div style={{ position: 'absolute', top: 0, left: 0, display: 'flex' }}>
-                              <span style={{ backgroundColor: '#ff4d4f', color: 'white', padding: '4px 8px', fontSize: '12px', fontWeight: 'bold' }}>SALE</span>
-
+                            <div
+                              style={{
+                                position: "absolute",
+                                top: 0,
+                                left: 0,
+                                display: "flex",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  backgroundColor: "#ff4d4f",
+                                  color: "white",
+                                  padding: "4px 8px",
+                                  fontSize: "12px",
+                                  fontWeight: "bold",
+                                }}
+                              >
+                                SALE
+                              </span>
                             </div>
                           )}
                           {product.featured && (
-                            <span style={{ position: 'absolute', top: 0, right: 0, backgroundColor: '#212529', color: 'white', padding: '4px 8px', fontSize: '12px', fontWeight: 'bold' }}>FEATURED</span>
+                            <span
+                              style={{
+                                position: "absolute",
+                                top: 0,
+                                right: 0,
+                                backgroundColor: "#212529",
+                                color: "white",
+                                padding: "4px 8px",
+                                fontSize: "12px",
+                                fontWeight: "bold",
+                              }}
+                            >
+                              HOT
+                            </span>
                           )}
-                          {/* <div style={{ width: '60px', height: '60px', backgroundColor: '#ced4da', marginBottom: '8px' }}></div> */}
-                          {/* <Text type="secondarcdy" style={{ fontSize: '12px', letterSpacing: '1px' }}>{product.category}</Text> */}
+                        </div>
 
+                        {/* Thông tin */}
+                        <div style={{ marginTop: "16px" }}>
+                          <Title
+                            level={5}
+                            style={{
+                              margin: "0 0 8px 0",
+                              fontSize: "14px",
+                              minHeight: "44px",
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                              overflow: "hidden",
+                            }}
+                          >
+                            {product.tensp}
+                          </Title>
+
+                          <div
+                            style={{
+                              marginBottom: "16px",
+                              display: "flex",
+                              flexDirection: "column",
+                            }}
+                          >
+                            <Text
+                              strong
+                              style={{ fontSize: "18px", color: "#ff4d4f" }}
+                            >
+                              {formatVND(currentPrice!)}
+                            </Text>
+                            {/* Chữ gạch ngang nếu có giá khuyến mãi */}
+                            <div style={{ minHeight: "22px" }}>
+                              {originalPrice && (
+                                <Text
+                                  delete
+                                  type="secondary"
+                                  style={{ fontSize: "14px" }}
+                                >
+                                  {formatVND(originalPrice)}
+                                </Text>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </Link>
-                      {/* Thông tin */}
-                      {/* <Link to={`/product/${product.id}`} style={{ color: 'inherit', textDecoration: 'none' }}> */}
-                      <div style={{ flex: 1 }}>
-                        <Title level={5} style={{ margin: '0 0 8px 0', fontSize: '14px', minHeight: '40px' }}>{product.name}</Title>
 
-                        <Space size={4} align="center" style={{ marginBottom: '8px' }}>
-                          <div style={{ display: 'flex', gap: '2px' }}>
-                            {[4 - 8].map((star) => (
-                              <div key={star} style={{ width: '12px', height: '12px', backgroundColor: '#212529' }}></div>
-                            ))}
-                          </div>
-                          <Text type="secondary" style={{ fontSize: '12px' }}>{product.rating} ({product.reviewCount})</Text>
-                        </Space>
-
-                        <div style={{ marginBottom: '16px' }}>
-                          <Text strong style={{ fontSize: '18px', marginRight: '8px' }}>${product.price}</Text>
-                          {product.originalPrice && <Text delete type="secondary" style={{ fontSize: '14px' }}>${product.originalPrice}</Text>}
-                        </div>
-                      </div>
-                      {/* </Link> */}
-                      <Button type="primary" block icon={<ShoppingCartOutlined />} style={{ backgroundColor: '#212529', borderColor: '#212529', borderRadius: '0px', height: '40px', fontWeight: 500 }}>
+                      {/* Nút Thêm vào giỏ hàng */}
+                      <Button
+                        type="primary"
+                        block
+                        icon={<ShoppingCartOutlined />}
+                        style={{ backgroundColor: '#212529', borderColor: '#212529', borderRadius: '0px', height: '40px', fontWeight: 500 }}
+                        onClick={(e) => {
+                          e.preventDefault(); // Ngăn hành vi link (nếu nút nằm trong thẻ <Link>)
+                          addToCart(String(product.idsp), 1); // product.id phải match với idsp trong database
+                        }}
+                      >
                         Add to Cart
                       </Button>
                     </Card>
@@ -193,11 +415,10 @@ const ProductsPage: React.FC = () => {
                 );
               })}
             </Row>
-
           </Col>
         </Row>
       </div>
-    </div >
+    </div>
   );
 };
 
