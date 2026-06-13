@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import passport from 'passport';
 import { registerUserService } from '../services/authservice';
+import { prisma } from '../models/prisma'; // BỔ SUNG: Import prisma client để truy vấn CSDL
 
 // =======================================================
 // 1. CHỨC NĂNG ĐĂNG KÝ (REGISTER)
@@ -27,8 +28,8 @@ export const registerUser = async (req: Request, res: Response) => {
 // 2. CHỨC NĂNG ĐĂNG NHẬP (LOGIN)
 // =======================================================
 export const loginUser = (req: Request, res: Response, next: NextFunction) => {
-  // Sử dụng cấu hình LocalStrategy của Passport để xác thực username/password [4]
-  // Thiết lập { session: false } vì chúng ta dùng JWT, không dùng session lưu bộ nhớ [3, 5]
+  // Sử dụng cấu hình LocalStrategy của Passport để xác thực username/password
+  // Thiết lập { session: false } vì chúng ta dùng JWT, không dùng session lưu bộ nhớ
   passport.authenticate('local', { session: false }, (err: any, user: any, info: any) => {
     
     // Nếu có lỗi hệ thống
@@ -37,7 +38,7 @@ export const loginUser = (req: Request, res: Response, next: NextFunction) => {
     // Nếu tài khoản hoặc mật khẩu không chính xác (user = false)
     if (!user) return res.status(401).json({ message: info.message });
 
-    // NẾU XÁC THỰC THÀNH CÔNG: Tạo token JWT [6]
+    // NẾU XÁC THỰC THÀNH CÔNG: Tạo token JWT
     const token = jwt.sign(
       { idusers: user.idusers, username: user.username }, 
       process.env.JWT_SECRET || 'chuoi-bi-mat', // Khóa bí mật (nên đưa vào file .env)
@@ -55,4 +56,36 @@ export const loginUser = (req: Request, res: Response, next: NextFunction) => {
     });
 
   })(req, res, next);
+};
+
+// =======================================================
+// 3. CHỨC NĂNG LẤY THÔNG TIN USER TỪ TOKEN (DÀNH CHO F5 RELOAD)
+// =======================================================
+export const getMe = async (req: Request, res: Response) => {
+  try {
+    // Middleware verifyToken đã giải mã token và gắn payload vào req.user
+    const userId = (req as any).user.idusers;
+    
+    // Tìm user trong bảng users dựa trên id (bỏ qua mật khẩu)
+    const user = await prisma.users.findUnique({
+      where: { idusers: userId },
+      select: { 
+        idusers: true, 
+        username: true, 
+        email: true, 
+        roles: true // Lấy trường roles để frontend biết là admin hay user
+      } 
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
+
+    // Trả về dữ liệu user cho hàm checkAuth trong AuthContext của React
+    res.status(200).json({ user });
+    
+  } catch (error) {
+    console.error("Lỗi getMe:", error);
+    res.status(500).json({ message: "Lỗi server khi lấy thông tin người dùng" });
+  }
 };

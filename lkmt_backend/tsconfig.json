@@ -7,8 +7,15 @@
     "skipLibCheck": true,
     "outDir": "dist",
     "rootDir": "./src",
-    "types": ["node"]
-    
+    "types": [
+      "node"
+    ]
   },
-   "exclude": ["node_modules", "prisma.config.ts"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "prisma.config.ts"
+  ]
 }
