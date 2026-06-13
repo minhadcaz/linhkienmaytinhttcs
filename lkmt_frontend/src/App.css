@@ -182,3 +182,14 @@
     border-right-color: var(--border);
   }
 }
+/* Đổi màu mũi tên thành màu đen */
+.ant-carousel .slick-prev::before,
+.ant-carousel .slick-next::before {
+  color: black !important;
+}
+
+/* Tùy chọn: Đổi màu khi hover chuột vào để tối hoặc nhạt hơn một chút */
+.ant-carousel .slick-prev:hover::before,
+.ant-carousel .slick-next:hover::before {
+  color: #333 !important; 
+}

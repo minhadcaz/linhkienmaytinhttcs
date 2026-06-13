@@ -30,56 +30,41 @@ const EditProduct: React.FC<any> = ({ open, onClose ,initialData}) => {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [imageLinks, setImageLinks] = useState<string[]>([]);
 
-  // Lấy dữ liệu Category và Brand khi Form được mở
-  // useEffect(() => {
-  //   if (open) {
-  //     const fetchData = async () => {
-  //       try {
-  //         // LƯU Ý: Đổi đường dẫn này thành API thực tế của bạn
-  //          const resCate = await axios.get('http://localhost:8080/api/categories');
-  //         const resBrand = await axios.get('http://localhost:8080/api/brands');
-  //         // setCategories(resCate.data);
-  //         // setBrands(resBrand.data);
-
-  //         // Data mẫu hiển thị tạm (bạn xóa phần này khi có API thực tế)
-  //         setCategories([{ idcate: 'cate1', namecate: 'Laptop' }, { idcate: 'cate2', namecate: 'Bàn phím' }]);
-  //         setBrands([{ idnsx: 'nsx1', tennsx: 'Asus' }, { idnsx: 'nsx2', tennsx: 'Dell' }]);
-  //       } catch (error) {
-  //         message.error("Lỗi khi tải danh mục và nhà sản xuất!");
-  //       }
-  //     };
-  //     fetchData();
-  //   }
-  // }, [open]);
-  // useEffect(() => {
-  //   const fetchDropdownData = async () => {
-  //     try {
-  //       // Lấy token nếu API của bạn được bảo vệ bởi verifyToken
-  //       const token = localStorage.getItem('access_token');
-  //       const config = {
-  //         headers: { Authorization: `Bearer ${token}` }
-  //       };
-
-  //       // Gọi đồng thời 2 API để lấy danh sách Loại SP và Nhà SX
-  //       const [categoryRes, brandRes] = await Promise.all([
-  //         axios.get('http://localhost:8080/api/data/categories', config),
-  //         axios.get('http://localhost:8080/api/data/brands', config)
-  //       ]);
-
-  //       // Cập nhật vào State
-  //       setCategories(categoryRes.data);
-  //       setBrands(brandRes.data);
-  //     } catch (error) {
-  //       console.error("Lỗi khi tải danh mục và nhà sản xuất:", error);
-  //     }
-  //   };
-
-  //   fetchDropdownData();
-  // }, []); // Mảng rỗng [] đảm bảo chỉ gọi API 1 lần khi mở trang
-  // // Tự động set giá khuyến mãi (giakm) bằng giá niêm yết (gianiemyet) khi nhập
+  
   useEffect(() => {
+    const fetchDropdownData = async () => {
+      try {
+        // Lấy token nếu API của bạn được bảo vệ bởi verifyToken
+        const token = localStorage.getItem('access_token');
+        const config = {
+          headers: { Authorization: `Bearer ${token}` }
+        };
+
+        // Gọi đồng thời 2 API để lấy danh sách Loại SP và Nhà SX
+        const [categoryRes, brandRes] = await Promise.all([
+          axios.get('http://localhost:8080/api/products/categories', config),
+          axios.get('http://localhost:8080/api/products/brands', config)
+        ]);
+
+        // Cập nhật vào State
+        setCategories(categoryRes.data);
+        setBrands(brandRes.data);
+      } catch (error) {
+        console.error("Lỗi khi tải danh mục và nhà sản xuất:", error);
+      }
+    };
+
+    fetchDropdownData();
+  }, []); // Mảng rỗng [] đảm bảo chỉ gọi API 1 lần khi mở trang
+  // // Tự động set giá khuyến mãi (giakm) bằng giá niêm yết (gianiemyet) khi nhập
+ useEffect(() => {
     if (initialData && open) {
-      // Đổ dữ liệu text/số vào Form
+      // Ép kiểu Thông số kỹ thuật từ JSON Object (Backend) thành Chuỗi (String) để hiện lên form
+      const thongSoString = initialData.thongsokythuat 
+        ? JSON.stringify(initialData.thongsokythuat, null, 2) 
+        : "";
+
+      // Đổ dữ liệu vào Form
       form.setFieldsValue({
         tensp: initialData.tensp,
         idcate: initialData.idcate,
@@ -89,8 +74,14 @@ const EditProduct: React.FC<any> = ({ open, onClose ,initialData}) => {
         soluong: initialData.soluong,
         tinhtrang: initialData.tinhtrang,
         baohanh: initialData.baohanh,
+        featured: initialData.featured,
+        
+        // BỔ SUNG 2 TRƯỜNG BỊ THIẾU
+        thongsokythuat: thongSoString, 
+        imageLink: initialData.hinhanh || [] 
       });
-      // Đổ dữ liệu mảng ảnh vào thẻ Select tags
+
+      // Cập nhật state quản lý ảnh
       setImageLinks(initialData.hinhanh || []);
     } else if (!open) {
       // Reset form khi đóng Modal
@@ -98,6 +89,7 @@ const EditProduct: React.FC<any> = ({ open, onClose ,initialData}) => {
       setImageLinks([]);
     }
   }, [initialData, open, form]);
+
   const gianiemyet = Form.useWatch("gianiemyet", form);
   useEffect(() => {
     if (gianiemyet !== undefined) {
@@ -109,7 +101,9 @@ const EditProduct: React.FC<any> = ({ open, onClose ,initialData}) => {
     try {
       const token = localStorage.getItem('access_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const payload = { ...values, imageLinks };
+      
+      const finalImageLinks = values.imageLink || imageLinks;
+      const payload = { ...values, imageLinks:finalImageLinks };
 
       if (initialData) {
         // NẾU LÀ SỬA (Gọi API PUT)

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router";
 import {
   Row,
@@ -9,6 +9,10 @@ import {
   Tag,
   Divider,
   Progress,
+  message,
+  Spin,
+  Carousel,
+  Descriptions,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -22,10 +26,11 @@ import {
   CarOutlined,
   SyncOutlined,
 } from "@ant-design/icons";
+import axios from "axios";
 
 // Import mảng products từ file mock data của bạn
 // Hãy chỉnh lại đường dẫn '../data/product' cho khớp với thư mục thực tế của bạn
-import { products } from "../data/product";
+// import { products } from "../data/product";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -34,13 +39,39 @@ const ProductDetailPage: React.FC = () => {
   const { id } = useParams();
 
   // Quản lý số lượng và tab
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const [orderQuantity, setOrderQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("Specifications");
-
+  const [showAllSpecs, setShowAllSpecs] = useState(false);
   // TÌM SẢN PHẨM TRONG MOCK DATA
-  const product = products.find((p) => p.id === id);
+  // const product = products.find((p) => p.id === id);
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        setLoading(true);
+        // Gọi API lấy thông tin chi tiết sản phẩm
+        const res = await axios.get(`http://localhost:8080/api/products/${id}`);
+        setProduct(res.data);
+      } catch (error) {
+        console.error("Lỗi khi lấy thông tin sản phẩm", error);
+        message.error("Không thể tải thông tin sản phẩm!");
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    if (id) fetchProduct();
+  }, [id]);
   // Nếu nhập sai ID trên URL hoặc không tìm thấy sản phẩm
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: "#f8f9fa" }}>
+        <Spin size="large" tip="Đang tải thông tin sản phẩm..." />
+      </div>
+    );
+  }
+
   if (!product) {
     return (
       <div
@@ -62,48 +93,72 @@ const ProductDetailPage: React.FC = () => {
   }
 
   // TÍNH TOÁN CÁC CHỈ SỐ KHUYẾN MÃI (Discount)
-  const hasDiscount =
-    product.originalPrice && product.originalPrice > product.price;
-  const savings = hasDiscount ? product.originalPrice! - product.price : 0;
-  const discountPercentage = hasDiscount
-    ? Math.round((savings / product.originalPrice!) * 100)
-    : 0;
+  const currentPrice = product.giakm || product.gianiemyet;
+  const originalPrice = product.gianiemyet;
+  const hasDiscount = originalPrice && originalPrice > currentPrice;
+  const savings = hasDiscount ? originalPrice - currentPrice : 0;
+  const discountPercentage = hasDiscount ? Math.round((savings / originalPrice) * 100) : 0;
 
-  const handleQuantityChange = (delta: number) => {
-    setOrderQuantity((prev) => (prev + delta < 1 ? 1 : prev + delta));
-  };
+  const inStock = product.soluong > 0;
 
   // --- RENDER CÁC TAB NỘI DUNG ---
-
+  let specs = product.thongsokythuat;
+  if (typeof specs === 'string') {
+    try { specs = JSON.parse(specs); } catch (e) { specs = null; }
+  }
+  const handleQuantityChange = (delta: number) => {
+    setOrderQuantity((prev) => {
+      const newQty = prev + delta;
+      if (newQty < 1) return 1;
+      if (newQty > product.soluong) {
+        message.warning(`Chỉ còn ${product.soluong} sản phẩm trong kho!`);
+        return product.soluong;
+      }
+      return newQty;
+    });
+  };
   // 1. Tab Specifications (Tự động map theo Object specifications của sản phẩm)
-  const renderSpecifications = () => (
-    <div style={{ padding: "24px 0" }}>
-      <Row gutter={48}>
-        {Object.entries(product.specifications).map(([key, value]) => (
-          <Col xs={24} md={12} key={key}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                borderBottom: "1px solid #f0f0f0",
-                paddingBottom: "12px",
-                marginBottom: "24px",
-              }}
-            >
-              <Text strong>{key}:</Text>
-              <Text
-                type="secondary"
-                style={{ textAlign: "right", maxWidth: "60%" }}
-              >
-                {value}
-              </Text>
-            </div>
-          </Col>
-        ))}
-      </Row>
-    </div>
-  );
+  const renderSpecifications = () => {
+    // Kiểm tra nếu không có thông số
+    if (!specs || typeof specs !== 'object' || Object.keys(specs).length === 0) {
+      return <Text type="secondary">Chưa có thông số kỹ thuật</Text>;
+    }
 
+    const specEntries = Object.entries(specs);
+
+    // Mặc định hiển thị 6 thông số đầu tiên cho gọn, nếu bấm xem thêm thì hiện hết
+    const visibleSpecs = showAllSpecs ? specEntries : specEntries.slice(0, 6);
+
+    return (
+      <div style={{ padding: "24px 0" }}>
+        <Descriptions
+          bordered
+          column={1} // Trên mobile 1 cột, trên desktop 2 cột
+          size="small"
+          labelStyle={{ fontWeight: 'bold', width: '30%', backgroundColor: '#fafafa' }}
+          contentStyle={{ width: '70%' }}
+        >
+          {visibleSpecs.map(([key, value]) => (
+            <Descriptions.Item label={key} key={key}>
+              {String(value)}
+            </Descriptions.Item>
+          ))}
+        </Descriptions>
+
+        {/* Nút Xem thêm / Thu gọn (Chỉ hiện khi có hơn 6 thông số) */}
+        {specEntries.length > 6 && (
+          <div style={{ textAlign: "center", marginTop: "16px" }}>
+            <Button
+              type="link"
+              onClick={() => setShowAllSpecs(!showAllSpecs)}
+            >
+              {showAllSpecs ? "Thu gọn" : `Xem toàn bộ thông số kỹ thuật (${specEntries.length})`}
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  };
   // 2. Tab Description
   const renderDescription = () => (
     <div style={{ padding: "24px 0" }}>
@@ -115,7 +170,7 @@ const ProductDetailPage: React.FC = () => {
           lineHeight: "1.8",
         }}
       >
-        {product.description}
+        {product.chitietsp || "Chưa có bài viết mô tả chi tiết cho sản phẩm này."}
       </Paragraph>
       <Divider />
       <Title level={5} style={{ marginBottom: "16px" }}>
@@ -218,7 +273,7 @@ const ProductDetailPage: React.FC = () => {
           </Link>
         </div>
 
-        <Row gutter={48}>
+        <Row gutter={16}>
           {/* CỘT TRÁI: HÌNH ẢNH SẢN PHẨM THẬT TỪ MOCK DATA */}
           <Col xs={24} md={12}>
             <div
@@ -276,7 +331,7 @@ const ProductDetailPage: React.FC = () => {
               )}
 
               {/* Ảnh sản phẩm */}
-              <img
+              {/* <img
                 src={product.image}
                 alt={product.name}
                 style={{
@@ -284,7 +339,22 @@ const ProductDetailPage: React.FC = () => {
                   maxHeight: "90%",
                   objectFit: "contain",
                 }}
-              />
+              /> */}
+              {product.hinhanh && product.hinhanh.length > 0 ? (
+                <div style={{ width: "100%" }}>
+                  <Carousel autoplay arrows>
+                    {product.hinhanh.map((img: string, index: number) => (
+                      <div key={index} style={{ height: "500px", display: "flex", justifyContent: "center", alignItems: "center" }}>
+                        <img src={img} alt={product.tensp} style={{ width: "90%", height: "90%", padding: "20px", maxWidth: "90%", maxHeight: "90%" }} />
+                      </div>
+                    ))}
+                  </Carousel>
+                </div>
+              ) : (
+                <div style={{ height: "100%", display: "flex", justifyContent: "center", alignItems: "center", color: "#999" }}>
+                  Chưa có hình ảnh
+                </div>
+              )}
             </div>
           </Col>
 
@@ -333,42 +403,26 @@ const ProductDetailPage: React.FC = () => {
             </Space>
 
             {/* Hiển thị Giá có hoặc không có khuyến mãi */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "baseline",
-                gap: "12px",
-                marginBottom: "8px",
-              }}
-            >
-              <Title level={1} style={{ margin: 0, fontWeight: 800 }}>
-                ${product.price}
+            <div style={{ display: "flex", alignItems: "baseline", gap: "16px", marginBottom: "8px" }}>
+              <Title level={1} style={{ margin: 0, color: "#ff4d4f" }}>
+                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(currentPrice)}
               </Title>
               {hasDiscount && (
-                <Title
-                  level={4}
-                  type="secondary"
-                  delete
-                  style={{ margin: 0, fontWeight: 400 }}
-                >
-                  ${product.originalPrice}
-                </Title>
+                <Text delete type="secondary" style={{ fontSize: "18px" }}>
+                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(originalPrice)}
+                </Text>
               )}
             </div>
 
-            {hasDiscount && (
-              <Text
-                style={{
-                  color: "#52c41a",
-                  fontWeight: 500,
-                  fontSize: "16px",
-                  display: "block",
-                  marginBottom: "24px",
-                }}
-              >
-                You save ${savings.toFixed(2)} ({discountPercentage}%)
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", margin: "24px 0" }}>
+              <div style={{ width: "10px", height: "10px", backgroundColor: inStock ? "#52c41a" : "#ff4d4f", borderRadius: "50%" }}></div>
+              <Text style={{ color: inStock ? "#52c41a" : "#ff4d4f", fontWeight: 500, fontSize: "16px" }}>
+                {inStock ? `Còn hàng (${product.soluong} sản phẩm)` : "Hết hàng"}
               </Text>
-            )}
+            </div>
+
+
+
 
             <div
               style={{

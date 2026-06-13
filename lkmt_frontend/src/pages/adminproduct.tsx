@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Card, Typography, Button, Row, Col, Select, Input, Table, Space, Popconfirm, message } from "antd";
+import { Card, Typography, Button, Row, Col, Select, Input, Table, Space, Popconfirm, message, Descriptions, Carousel, Modal } from "antd";
 import { PlusOutlined, SearchOutlined, EyeOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import axios from "axios";
 import AddProduct from "../components/adminaddproduct";
@@ -18,7 +18,9 @@ interface Brand {
 }
 const AdminProductPage: React.FC = () => {
     const [isAddProductOpen, setIsAddProductOpen] = useState(false);
-    
+    const [isEditProductOpen, setIsEditProductOpen] = useState(false);
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [viewingProduct, setViewingProduct] = useState<any>(null);
     const [productData, setProductData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [categories, setCategories] = useState<Category[]>([]);
@@ -40,6 +42,7 @@ const AdminProductPage: React.FC = () => {
     useEffect(() => {
         fetchProducts();
     }, []);
+    
     useEffect(() => {
         const fetchDropdownData = async () => {
             try {
@@ -51,8 +54,8 @@ const AdminProductPage: React.FC = () => {
 
                 // Gọi đồng thời 2 API để lấy danh sách Loại SP và Nhà SX
                 const [categoryRes, brandRes] = await Promise.all([
-                    axios.get('http://localhost:8080/api/data/categories', config),
-                    axios.get('http://localhost:8080/api/data/brands', config)
+                    axios.get('http://localhost:8080/api/products/categories', config),
+                    axios.get('http://localhost:8080/api/products/brands', config)
                 ]);
 
                 // Cập nhật vào State
@@ -66,7 +69,16 @@ const AdminProductPage: React.FC = () => {
         fetchDropdownData();
     }, []);
     // 2. Các hàm Action
-    const handleView = (idsp: string) => console.log("Xem chi tiết:", idsp);
+    const handleView = async (idsp: string) => {
+        try {
+            // Gọi API lấy thông tin chi tiết của sản phẩm theo id
+            const res = await axios.get(`http://localhost:8080/api/products/${idsp}`);
+            setViewingProduct(res.data); // Lưu dữ liệu lấy được vào state
+            setIsViewModalOpen(true);    // Mở Modal View lên
+        } catch (error) {
+            message.error("Lỗi khi tải chi tiết sản phẩm!");
+        }
+    };
 
     const handleDelete = async (idsp: string) => {
         try {
@@ -79,8 +91,8 @@ const AdminProductPage: React.FC = () => {
     const handleEdit = async (idsp: string) => {
         try {
             const res = await axios.get(`http://localhost:8080/api/products/${idsp}`);
-            setSelectedProduct(res.data); // Truyền data này vào initialData
-            setIsAddProductOpen(true);
+            setSelectedProduct(res.data);
+            setIsEditProductOpen(true); // Mở Drawer Edit thay vì Add
         } catch (error) {
             message.error("Lỗi khi tải dữ liệu sửa!");
         }
@@ -112,12 +124,108 @@ const AdminProductPage: React.FC = () => {
 
     return (
         <>
+            <Modal
+                title={
+                    <span style={{ fontSize: "18px", fontWeight: 600 }}>CHI TIẾT SẢN PHẨM</span>
+                }
+                open={isViewModalOpen}
+                onCancel={() => setIsViewModalOpen(false)}
+                footer={[
+                    <Button key="close" type="primary" onClick={() => setIsViewModalOpen(false)}>
+                        Đóng
+                    </Button>
+                ]}
+                width={700}
+            >
+                {viewingProduct && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "20px", marginTop: "16px" }}>
+
+                        {/* Hiển thị Slide Ảnh tĩnh */}
+                        {viewingProduct.hinhanh && viewingProduct.hinhanh.length > 0 ? (
+                            <Carousel autoplay arrows style={{ backgroundColor: '#f0f2f5', borderRadius: '20px' }}>
+                                {viewingProduct.hinhanh.map((img: string, index: number) => (
+                                    <div key={index} style={{ height: '300px', display: 'flex', justifyContent: 'center' }}>
+                                        <img src={img} alt="preview" style={{ height: '300px', width: '100%', objectFit: 'contain' }} />
+                                    </div>
+                                ))}
+                            </Carousel>
+                        ) : (
+                            <div style={{ height: '200px', backgroundColor: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px' }}>
+                                <span style={{ color: '#999' }}>Chưa có hình ảnh</span>
+                            </div>
+                        )}
+
+                        {/* Bảng Thông tin */}
+                        <Descriptions bordered column={1} size="small">
+                            <Descriptions.Item label="Mã SP">{viewingProduct.idsp}</Descriptions.Item>
+                            <Descriptions.Item label="Tên Sản Phẩm"><strong>{viewingProduct.tensp}</strong></Descriptions.Item>
+                            <Descriptions.Item label="Danh Mục">{viewingProduct.loaisanpham?.namecate}</Descriptions.Item>
+                            <Descriptions.Item label="Hãng Sản Xuất">{viewingProduct.nhasanxuat?.tennsx}</Descriptions.Item>
+
+                            <Descriptions.Item label="Giá Niêm Yết">
+                                <Text delete type="secondary">
+                                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(viewingProduct.gianiemyet || 0)}
+                                </Text>
+                            </Descriptions.Item>
+
+                            <Descriptions.Item label="Giá Khuyến Mãi">
+                                <Text type="danger" strong>
+                                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(viewingProduct.giakm || 0)}
+                                </Text>
+                            </Descriptions.Item>
+
+                            <Descriptions.Item label="Tồn Kho">{viewingProduct.soluong} Cái</Descriptions.Item>
+                            <Descriptions.Item label="Tình Trạng">{viewingProduct.tinhtrang}</Descriptions.Item>
+                            <Descriptions.Item label="Bảo Hành">{viewingProduct.baohanh || "Không rõ"}</Descriptions.Item>
+                        </Descriptions>
+                        {(() => {
+                            // Xử lý an toàn: Kiểm tra xem thông số có tồn tại và có phải JSON object không
+                            let specs = viewingProduct.thongsokythuat;
+                            if (typeof specs === 'string') {
+                                try { specs = JSON.parse(specs); } catch (e) { specs = null; }
+                            }
+
+                            // Chỉ render bảng khi specs là 1 object có chứa dữ liệu
+                            if (specs && typeof specs === 'object' && Object.keys(specs).length > 0) {
+                                return (
+                                    <Descriptions
+                                        title={<span style={{ fontSize: "16px", color: "#1890ff" }}>THÔNG SỐ KỸ THUẬT</span>}
+                                        bordered
+                                        column={1}
+                                        size="small"
+                                    >
+                                        {/* Dùng Object.entries để lặp qua từng cặp Key - Value trong JSON */}
+                                        {Object.entries(specs).map(([key, value]) => (
+                                            <Descriptions.Item
+                                                label={<span style={{ fontWeight: 500, textTransform: "capitalize" }}>{key}</span>}
+                                                key={key}
+                                            >
+                                                {String(value)}
+                                            </Descriptions.Item>
+                                        ))}
+                                    </Descriptions>
+                                );
+                            }
+                            return null;
+                        })()}
+
+                    </div>
+
+                )}
+            </Modal>
             {/* Modal Thêm sản phẩm */}
+
+
+
             <AddProduct open={isAddProductOpen} initialData={selectedProduct} onClose={() => {
                 setIsAddProductOpen(false);
                 fetchProducts(); // Tải lại bảng sau khi đóng modal thêm
             }} />
-
+            <EditProduct
+                open={isEditProductOpen}
+                initialData={selectedProduct}
+                onClose={() => { setIsEditProductOpen(false); fetchProducts(); }}
+            />
             <Card style={{ borderRadius: "12px", borderColor: "#e8e8e8" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
                     <Title level={4} style={{ margin: 0 }}>Quản lý Sản Phẩm</Title>

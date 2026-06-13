@@ -63,8 +63,8 @@ const AddProduct: React.FC<AddProductDrawerProps> = ({ open, onClose }) => {
 
         // Gọi đồng thời 2 API để lấy danh sách Loại SP và Nhà SX
         const [categoryRes, brandRes] = await Promise.all([
-          axios.get('http://localhost:8080/api/data/categories', config),
-          axios.get('http://localhost:8080/api/data/brands', config)
+          axios.get('http://localhost:8080/api/products/categories', config),
+          axios.get('http://localhost:8080/api/products/brands', config)
         ]);
 
         // Cập nhật vào State
